@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KhamChat</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <style>
+    *{margin:0; padding:0; box-sizing:border-box; font-family:Arial;}
+    body{background:#0b0b0b; color:#fff; transition:0.3s;}
+    body.light{background:#f5f5f5; color:#000;}
+    body.light .header{background: linear-gradient(90deg, #8e44ad, #6a0dad);}
+    body.light .tabs, body.light .input-area{background:#fff; border-color:#ddd;}
+    body.light .chat-item, body.light .you{background:#e0e0e0; color:#000;}
+    .header{background: linear-gradient(90deg, #6a0dad, #8e44ad); padding:15px; display:flex; justify-content:space-between; align-items:center;}
+    .tabs{display:flex; background:#1a1a1a; border-bottom:1px solid #333;}
+    .tab{flex:1; text-align:center; padding:12px; cursor:pointer; color:#aaa;}
+    .tab.active{color:#8e44ad; border-bottom:2px solid #8e44ad;}
+    .page{display:none; padding:10px; height:calc(100vh - 140px); overflow-y:auto;}
+    .page.active{display:block;}
+    .chat-item{display:flex; padding:12px; gap:10px; border-bottom:1px solid #2a2a2a; cursor:pointer; align-items:center;}
+    .avatar{width:50px; height:50px; border-radius:50%; background:#8e44ad; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold;}
+    .avatar img{width:100%; height:100%; border-radius:50%; object-fit:cover;}
+    .chat-info{flex:1;}
+    .chat-name{font-weight:bold;}
+    .chat-last{font-size:12px; opacity:0.7;}
+    .input-area{position:fixed; bottom:0; width:100%; background:#1a1a1a; padding:8px; display:flex;}
+    .input-area input{flex:1; background:#2a2a2a; border:none; border-radius:25px; padding:12px; color:white; margin:0 8px;}
+    body.light .input-area input{background:#e0e0e0; color:#000;}
+    .send-btn{background:#8e44ad; border:none; border-radius:50%; width:45px; height:45px; color:white;}
+    .login-box{background:#1a1a1a; padding:20px; margin:50px 20px; border-radius:10px;}
+    body.light .login-box{background:#fff;}
+    .login-box input{width:100%; padding:12px; margin:8px 0; background:#2a2a2a; border:none; border-radius:5px; color:white;}
+    body.light .login-box input{background:#e0e0e0; color:#000;}
+    .login-box button{width:100%; padding:12px; background:#8e44ad; border:none; border-radius:5px; color:white; margin-top:10px; cursor:pointer;}
+    .hidden{display:none;}
+    .msg{padding:8px 12px; margin:5px 0; border-radius:8px; max-width:70%; clear:both;}
+    .me{background:#8e44ad; float:right; color:white;}
+    .you{background:#2a2a2a; float:left;}
+    body.light .you{background:#e0e0e0;}
+    .setting-item{padding:15px; border-bottom:1px solid #2a2a2a; display:flex; justify-content:space-between; align-items:center;}
+    select, input[type=file]{background:#2a2a2a; color:white; border:none; padding:8px; border-radius:5px;}
+    body.light select, body.light input[type=file]{background:#e0e0e0; color:#000;}
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-box">
+      <h2 style="text-align:center; color:#8e44ad;">KhamChat</h2>
+      <input type="text" id="username" placeholder="Username">
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button onclick="signUp()">Sign Up</button>
+      <button onclick="signIn()" style="background:#444;">Login</button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app-screen" class="hidden">
+    <div class="header">
+      <h1 id="appTitle">KhamChat</h1>
+      <i class="material-icons" onclick="showPage('settings')">settings</i>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="showPage('chats')" data-en="Chats" data-ha="Sakonnin">Chats</div>
+      <div class="tab" onclick="showPage('contacts')" data-en="Contacts" data-ha="Lambobi">Contacts</div>
+      <div class="tab" onclick="showPage('global')" data-en="Global" data-ha="Duniya">Global</div>
+      <div class="tab" onclick="showPage('settings')" data-en="Settings" data-ha="Saiti">Settings</div>
+    </div>
+
+    <!-- CHATS -->
+    <div id="chats" class="page active"><div id="chatList"></div></div>
+
+    <!-- CONTACTS -->
+    <div id="contacts" class="page"><div id="contactsList"></div></div>
+
+    <!-- GLOBAL ROOM -->
+    <div id="global" class="page">
+      <div id="globalMessages" style="padding-bottom:70px;"></div>
+      <div class="input-area">
+        <input type="text" id="globalInput" placeholder="Send to Global Room">
+        <button class="send-btn" onclick="sendGlobal()"><i class="material-icons">send</i></button>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings" class="page">
+      <div style="padding:10px;">
+        <div class="setting-item">
+          <span data-en="Profile Picture" data-ha="Hoton Profile">Profile Picture</span>
+          <input type="file" id="profilePic" accept="image/*" onchange="updateProfilePic(event)">
+        </div>
+        <div class="setting-item">
+          <span data-en="Language" data-ha="Harshe">Language</span>
+          <select id="langSelect" onchange="changeLang()">
+            <option value="en">English</option>
+            <option value="ha">Hausa</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span data-en="Theme" data-ha="Siffa">Theme</span>
+          <select id="themeSelect" onchange="changeTheme()">
+            <option value="dark" data-en="Dark" data-ha="Duhu">Dark</option>
+            <option value="light" data-en="Light" data-ha="Haske">Light</option>
+            <option value="system" data-en="System" data-ha="Na Wayarka">System</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <button onclick="logout()" style="background:red; padding:10px; border:none; color:white; border-radius:5px; width:100%;">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIVATE CHAT -->
+    <div id="privateChat" class="hidden">
+      <div class="header">
+        <i class="material-icons" onclick="backToHome()">arrow_back</i>
+        <h1 id="chatWithName">Chat</h1>
+      </div>
+      <div id="privateMessages" style="padding:10px; padding-bottom:70px; height:calc(100vh - 140px); overflow-y:auto;"></div>
+      <div class="input-area">
+        <input type="text" id="privateInput" placeholder="Message">
+        <button class="send-btn" onclick="sendPrivate()"><i class="material-icons">send</i></button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAsFeKfeYTIGzP221hwPlFBHPiYyy-TLqE",
+      authDomain: "khamchat-1d5a4.firebaseapp.com",
+      projectId: "khamchat-1d5a4",
+      storageBucket: "khamchat-1d5a4.firebasestorage.app",
+      messagingSenderId: "515176934851",
+      appId: "1:515176934851:web:4ec261196d1ff497666176"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+    let currentUser = null;
+    let chatWithId = null;
+    let lang = localStorage.getItem('lang') || 'en';
+    let theme = localStorage.getItem('theme') || 'dark';
+
+    // AUTO LOGIN - IDAN YAYI REGISTER YA FITO YA KOMA ZAI SHIGA DIRECT
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('app-screen').classList.remove('hidden');
+        applyLang();
+        applyTheme();
+        loadContacts();
+        loadGlobal();
+      } else {
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('app-screen').classList.add('hidden');
+      }
+    });
+
+    window.signUp = async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const username = document.getElementById('username').value;
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+      await setDoc(doc(db, "users", userCred.user.uid), {
+        username, email, photo: "", firstLetter: username.charAt(0).toUpperCase()
+      });
+    }
+    window.signIn = () => signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
+    
+    // LOGOUT - DAI DAI SAI YA NEMI LOGIN KUMA
+    window.logout = async () => { await signOut(auth); }
+
+    window.showPage = (id) => {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // PROFILE PIC - IDAN BABU SAI FIRST LETTER
+    async function loadContacts(){
+      const snap = await getDocs(collection(db, "users"));
+      let html = "";
+      snap.forEach(d => {
+        if(d.id !== currentUser.uid){
+          const data = d.data();
+          const avatar = data.photo ? `<img src="${data.photo}">` : data.firstLetter;
+          html += `<div class="chat-item" onclick="openPrivate('${d.id}', '${data.username}')">
+            <div class="avatar">${avatar}</div>
+            <div class="chat-info">
+              <div class="chat-name">${data.username}</div>
+              <div class="chat-last">Tap to chat</div>
+            </div>
+          </div>`;
+        }
+      });
+      document.getElementById('contactsList').innerHTML = html;
+      document.getElementById('chatList').innerHTML = html;
+    }
+
+    window.updateProfilePic = async (e) => {
+      const file = e.target.files[0];
+      const storageRef = ref(storage, 'profiles/' + currentUser.uid);
+      const snap = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snap.ref);
+      await updateDoc(doc(db, "users", currentUser.uid), {photo: url});
+      alert(lang === 'ha' ? 'An sabunta hoto!' : 'Profile updated!');
+      loadContacts();
+    }
+
+    // LANGUAGE HAUSA / ENGLISH
+    window.changeLang = () => {
+      lang = document.getElementById('langSelect').value;
+      localStorage.setItem('lang', lang);
+      applyLang();
+    }
+    function applyLang(){
+      document.querySelectorAll('[data-en]').forEach(el => {
+        el.innerText = lang === 'ha' ? el.getAttribute('data-ha') : el.getAttribute('data-en');
+      });
+      document.getElementById('langSelect').value = lang;
+    }
+
+    // DARK / LIGHT / SYSTEM MODE
+    window.changeTheme = () => {
+      theme = document.getElementById('themeSelect').value;
+      localStorage.setItem('theme', theme);
+      applyTheme();
+    }
+    function applyTheme(){
+      document.body.classList.remove('light');
+      if(theme === 'light') document.body.classList.add('light');
+      if(theme === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches) document.body.classList.add('light');
+      document.getElementById('themeSelect').value = theme;
+    }
+
+    window.openPrivate = (uid, name) => {
+      chatWithId = uid;
+      document.getElementById('chatWithName').innerText = name;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('privateChat').classList.remove('hidden');
+      loadPrivate();
+    }
+    window.backToHome = () => {
+      document.getElementById('privateChat').classList.add('hidden');
+      document.getElementById('chats').classList.add('active');
+    }
+    window.sendPrivate = async () => {
+      const msg = document.getElementById('privateInput').value;
+      if(msg === "") return;
+      const chatId = [currentUser.uid, chatWithId].sort().join("_");
+      await addDoc(collection(db, "chats", chatId, "messages"), {text: msg, from: currentUser.uid, time: serverTimestamp()});
+      document.getElementById('privateInput').value = "";
+    }
+    function loadPrivate(){
+      const chatId = [currentUser.uid, chatWithId].sort().join("_");
+      const q = query(collection(db, "chats", chatId, "messages"), orderBy("time"));
+      onSnapshot(q, (snapshot) => {
+        let html = "";
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const cls = data.from === currentUser.uid ? "me" : "you";
+          html += `<div class="msg ${cls}">${data.text}</div>`;
+        });
+        document.getElementById('privateMessages').innerHTML = html;
+      });
+    }
+    window.sendGlobal = async () => {
+      const msg = document.getElementById('globalInput').value;
+      if(msg === "") return;
+      await addDoc(collection(db, "global"), {text: msg, from: currentUser.uid, time: serverTimestamp()});
+      document.getElementById('globalInput').value = "";
+    }
+    function loadGlobal(){
+      const q = query(collection(db, "global"), orderBy("time"));
+      onSnapshot(q, (snapshot) => {
+        let html = "";
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          html += `<div class="msg">${data.text}</div>`;
+        });
+        document.getElementById('globalMessages').innerHTML = html;
+      });
+    }
+  </script>
+</body>
+</html>
